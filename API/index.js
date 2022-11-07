@@ -1,9 +1,39 @@
+require("dotenv").config();
 const express = require("express");
 const app = express();
 const bodyParser = require("body-parser");
+const cors = require("cors");
+const jwt = require("jsonwebtoken");
 
+const jwtSecret = process.env.SECRET;
+
+
+app.use(cors());
 app.use(bodyParser.urlencoded({extended:false}));
 app.use(bodyParser.json());
+
+function auth(req,res,next){
+    const authToken = req.headers["authorization"];
+    if(auth!=undefined){
+
+        const bearer = authToken.split(' ');
+        var token = bearer[1];
+        jwt.verify(token,jwtSecret,(err,data)=>{
+            if(err){
+                res.status(401)
+                res.json({err:"Token inválido"})
+            }else{
+                req.token = token;
+                req.loggedUser = {id:data.id,email:data.email};
+                req.empresa = "Saints Enterprise "
+                next();
+            }
+        });
+    }else{
+        res.status(401);
+        res.json({err:"Token inválido"})
+    } 
+};
 
 //Banco de dados fake
 var DB ={
@@ -36,16 +66,31 @@ var DB ={
             price: 40
 
         },
+    ],
+    users:[
+        {
+            id:1,
+            name:"João Pedro Ramos",
+            email:"Jpiramos21@gmail.com",
+            password:"12345"
+        },
+
+        {
+            id:2,
+            name:"Rafael Gomes",
+            email:"Rafa12@gmail.com",
+            password:"abcdefgh"
+        }     
     ]
 };
 
 
-app.get("/games",(req,res)=>{
+app.get("/games",auth,(req,res)=>{
     res.statusCode = 200;
-    res.json(DB.games);
+    res.json({games: DB.games});
 });
 
-app.get("/game/:id",(req,res)=>{
+app.get("/game/:id",auth,(req,res)=>{
 
     if(isNaN(req.params.id)){
         res.sendStatus(400);
@@ -66,7 +111,7 @@ app.get("/game/:id",(req,res)=>{
 
 });
 
-app.post("/game",(req,res)=>{
+app.post("/game",auth,(req,res)=>{
     var {title,price,year} = req.body;
     DB.games.push({ 
         id:231,
@@ -77,7 +122,7 @@ app.post("/game",(req,res)=>{
      res.sendStatus(200);
 });
 
-app.delete("/game/:id",(req,res)=>{
+app.delete("/game/:id",auth,(req,res)=>{
 
     if(isNaN(req.params.id)){
         res.sendStatus(400);
@@ -94,7 +139,7 @@ app.delete("/game/:id",(req,res)=>{
     }
 });
 
-app.put("/game/:id",(req,res)=>{
+app.put("/game/:id",auth,(req,res)=>{
 
     if(isNaN(req.params.id)){
         res.sendStatus(400);
@@ -135,7 +180,42 @@ app.put("/game/:id",(req,res)=>{
     }
 });
 
+app.post("/auth",auth,(req,res)=>{
 
-app.listen(8080,()=>{
+    var{email,password} = req.body
+
+    if(email !=undefined){
+        var user = DB.users.find(u =>email==email);
+
+        if(user!=undefined){
+            if(user.password==password){
+
+                jwt.sign({id:user.id,email:user.email},jwtSecret,{expiresIn:"48h"},(err,token)=>{
+                    if(err){
+                        res.status(400);
+                        res.json({err:"Falha interna !"})
+                    }else{
+                        res.status(200);
+                        res.json({token:token})
+                    }
+                });
+                
+            }else{
+                res.status(401);
+                res.json({err:"Credenciais inválidas"})
+            }
+
+        }else{
+            res.status(404);
+            res.json({err:"Email enviado não cadastrado na base de dados"})
+        }
+
+    }else{
+        res.status(400);
+        res.json({err:"E-mail inválido"})
+    }
+});
+
+app.listen(1919,()=>{
     console.log("API RODANDO")
-})
+});

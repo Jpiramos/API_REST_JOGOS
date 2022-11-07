@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Loja de Jogos</title>
+    <hr>
+    <h4>Lista de games</h4>
+    <ul id="games"></ul>
+    <hr>
+    <h4>Novo game</h4>
+    <input type="text" name="title" id="title" placeholder="Título">
+    <input type="number" name="year" id="year" placeholder="Ano">
+    <input type="number" name="price" id="price" placeholder="Preço">
+    <button type="button" onclick="creatingG()">Criar</button>
+</head>
+<body>
+    
+</body>
+
+<script 
+src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js">
+</script>
+
+<script>
+
+    var axiosConfig = {
+        headers: {
+            Authorization: "Bearer" + "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9eyJpZCI6MSwiZW1haWwiOiJKcGlyYW1vczIxQGdtYWlsLmNvbSIsImlhdCI6MTY2Mjc2NDI4NSwiZXhwIjoxNjYyOTM3MDg1fQ.AfcvK5l1BmNXOfj7GhRUkjDV5OG_14b8YWVgR2BGzms"
+        }
+    }
+
+    function creatingG(){
+        var titleImput = document.getElementById("title");
+        var yearImput = document.getElementById("year");
+        var priceImput = document.getElementById("price");
+
+        var game = {
+            title: titleImput.value,
+            year: yearImput.value,
+            price: priceImput.value
+        }
+
+        axios.post("http://localhost:1919/game",game).then(response=>{
+            if(response.status==200){ 
+                alert("Game Cadastrado com Sucesso!")
+            }
+        }).catch(err=>{
+                console.log(err)
+        })
+    }
+</script>
+
+<script>
+    axios.get("http://localhost:1919/games",axiosConfig).then(response=>{
+        var games =response.data;
+        var list = document.getElementById("games");
+
+        games.forEach(game =>{
+            var item = document.createElement("li");
+            item.innerHTML = `${game.id} -${game.title} - $${game.price}`
+            list.appendChild(item)
+        })
+
+    }).catch(error=>{
+        console.log(error)
+    })
+</script>
+
+
+</html>
